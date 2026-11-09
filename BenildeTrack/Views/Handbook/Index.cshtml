@@ -8,21 +8,83 @@
 <p class="text-muted">Search for a rule. This finds matching sections, it is not an official ruling. For a written answer, use Ask Tala.</p>
 
 <form method="get" asp-action="Index" class="d-flex gap-2 mb-4">
-    <input name="q" value="@query" class="form-control" placeholder="Try: shouting in class" />
+    <input id="handbook-q" name="q" value="@query" class="form-control" placeholder="Try: shouting in class" autocomplete="off" />
     <button class="btn btn-success">Search</button>
 </form>
 
-@if (!string.IsNullOrWhiteSpace(query) && !Model.Any())
-{
-    <p>No matching sections. Try different words.</p>
-}
+<div id="handbook-results">
+    @if (!string.IsNullOrWhiteSpace(query) && !Model.Any())
+    {
+        <p>No matching sections. Try different words.</p>
+    }
 
-@foreach (var s in Model)
-{
-    <div class="card shadow-sm mb-3">
-        <div class="card-body">
-            <h2 class="h6 card-title text-success">@s.Number - @s.Title</h2>
-            <p class="card-text mb-0">@s.Text</p>
+    @foreach (var s in Model)
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <h2 class="h6 card-title text-success">@s.Number - @s.Title</h2>
+                <p class="card-text mb-0">@s.Text</p>
+            </div>
         </div>
-    </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var input = document.getElementById("handbook-q");
+            var box = document.getElementById("handbook-results");
+            var url = '@Url.Action("Search", "Handbook")';
+            var timer = null;
+            var latest = 0; // ignore answers that arrive late, so old results never overwrite newer ones
+
+            input.addEventListener("input", function () {
+                clearTimeout(timer);
+                timer = setTimeout(run, 250); // wait until the person pauses typing
+            });
+
+            async function run() {
+                var q = input.value.trim();
+                if (q.length > 0 && q.length < 3) return; // search needs 3+ letters
+
+                var mine = ++latest;
+                var res = await fetch(url + "?q=" + encodeURIComponent(q));
+                if (!res.ok || mine !== latest) return;
+                render(await res.json(), q);
+            }
+
+            // Builds the cards with textContent, so handbook text can never inject HTML.
+            function render(items, q) {
+                box.replaceChildren();
+
+                if (q && items.length === 0) {
+                    var none = document.createElement("p");
+                    none.textContent = "No matching sections. Try different words.";
+                    box.appendChild(none);
+                    return;
+                }
+
+                items.forEach(function (s) {
+                    var card = document.createElement("div");
+                    card.className = "card shadow-sm mb-3";
+
+                    var body = document.createElement("div");
+                    body.className = "card-body";
+
+                    var title = document.createElement("h2");
+                    title.className = "h6 card-title text-success";
+                    title.textContent = s.number + " - " + s.title;
+
+                    var text = document.createElement("p");
+                    text.className = "card-text mb-0";
+                    text.textContent = s.text;
+
+                    body.appendChild(title);
+                    body.appendChild(text);
+                    card.appendChild(body);
+                    box.appendChild(card);
+                });
+            }
+        })();
+    </script>
 }

@@ -5,6 +5,9 @@
 
 <h1 class="h3 mb-4">Dashboard</h1>
 
+<input data-live-filter class="form-control mb-4" placeholder="Search students" autocomplete="off" />
+<p id="live-no-matches" class="text-muted" hidden>No matching students.</p>
+
 @* ---------- Excuses waiting for a decision ---------- *@
 @if (Model.PendingExcuses.Any())
 {
@@ -42,7 +45,7 @@
         }
         else
         {
-            <table class="table table-striped align-middle mb-0">
+                        <table class="table table-striped align-middle mb-0 js-live-table">
                 <thead><tr><th>Student</th><th>Absences</th><th>Lates</th><th>Dropout points</th></tr></thead>
                 <tbody>
                     @foreach (var row in roster.Rows)
