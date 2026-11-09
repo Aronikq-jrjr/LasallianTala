@@ -26,4 +26,15 @@ public class HandbookController : Controller
 
         return View(sections);
     }
+
+    // Used by the live search box. Returns matching sections as JSON.
+    [HttpGet]
+    public async Task<IActionResult> Search(string? q)
+    {
+        List<HandbookSection> sections = string.IsNullOrWhiteSpace(q)
+            ? await _handbook.GetAllAsync()
+            : await _handbook.SearchAsync(q);
+
+        return Json(sections.Select(s => new { s.Number, s.Title, s.Text }));
+    }
 }
